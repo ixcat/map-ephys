@@ -60,9 +60,9 @@ class LegacySessionIngest(dj.Computed):
 
         skey = {'animal': 399572}
         if not experiment.Session() & skey:
-            skey['trial'] = 1
+            skey['session'] = 1
         else:
-            skey['trial'] = len(experiment.Session() & skey) + 1
+            skey['session'] = len(experiment.Session() & skey) + 1
 
         if experiment.Session() & skey:
             # XXX: raise DataJointError?
