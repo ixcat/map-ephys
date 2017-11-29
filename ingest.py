@@ -3,7 +3,6 @@ import os
 import sys
 
 import scipy.io as spio
-import numpy as np
 
 import datajoint as dj
 
@@ -12,6 +11,8 @@ import experiment
 
 if 'legacy_data_dir' not in dj.config:
     dj.config['legacy_data_dir'] = 'x:\map\map-ephys\data'
+
+schema = dj.schema(dj.config['ingest_database'], locals())
 
 
 @schema
@@ -22,7 +23,8 @@ class LegacySession(dj.Lookup):
     """
 
     contents = [[os.path.join(dj.config['legacy_data_dir'], f)]
-                for f in os.listdir(nwbfiledir) if f.endswith('.mat')]
+                for f in os.listdir(dj.config['legacy_data_dir'])
+                if f.endswith('.mat')]
 
 
 @schema
@@ -35,15 +37,15 @@ class LegacySessionIngest(dj.Computed):
 
     @property
     def key_source(self):
-        return LegacySessionFile()
-    
+        return LegacySession()
+
     def make(self, key):
 
         sfname = key['legacy_sesion_file']
         print('LegacySessionIngest.make(): Loading {f}'.format(sfname))
 
         mat = spio.loadmat(sfname, squeeze_me=True)
-        SessionData=mat['SessionData']
+        SessionData = mat['SessionData']
 
         # construct session key & add session
         #
@@ -56,7 +58,7 @@ class LegacySessionIngest(dj.Computed):
         # from original ingest...
         #
 
-        skey = { 'animal': 399572 }
+        skey = {'animal': 399572}
         if not experiment.Session() & skey:
             skey['trial'] = 1
         else:
@@ -69,7 +71,7 @@ class LegacySessionIngest(dj.Computed):
 
         # do rest of data loading here
         # ...
-        # and save a record here to prevent future loading 
+        # and save a record here to prevent future loading
         self.insert1(dict(**key, **skey))
 
 
