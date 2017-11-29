@@ -35,8 +35,8 @@ class Session(dj.Manual):
         -> Session
         trial   : smallint
         ---
-        start_time : decimal(8,4)  # (s)
-        end_time : decimal(8,4)  # (s)
+        start_time : decimal(6,4)  # (s)
+        end_time : decimal(6,4)  # (s)
         """
 		
 		
@@ -50,75 +50,59 @@ class Session(dj.Manual):
         TrialSettings=SessionData.flatten()[0][10]
         OriginalStateNamesByNumber=RawData.flatten()[0][0]
         OriginalStateData=RawData.flatten()[0][1]
-        OriginalEventData=RawData.flatten()[0][2]
         OriginalStateTimestamps=RawData.flatten()[0][3]
         OriginalEventTimestamps=RawData.flatten()[0][4]
 
-        for i in range(0, len(OriginalStateTimestamps)):
+        for i in range(0, len(OriginalEventTimestamps)):
             trial_instruction = 'left'
             early_lick = 'no early'
             outcome = 'ignore'
             GUI = TrialSettings[i][0]
-            SampleDur = GUI.flatten()[0][1]
-            DelayDur = GUI.flatten()[0][2]
-            AnswerPeriod = GUI.flatten()[0][3]
             ProtocolType = GUI.flatten()[0][10] # 1 Water-Valve-Calibration 2 Licking 3 Autoassist 4 No autoassist 5 DelayEnforce 6 SampleEnforce 7 Fixed
-            Reversal = GUI.flatten()[0][13]
-            StopLicking=np.where(OriginalStateNamesByNumber[i]=='StopLicking')[0]+1
-            Reward=np.where(OriginalStateNamesByNumber[i]=='Reward')[0]+1
-            TimeOut=np.where(OriginalStateNamesByNumber[i]=='TimeOut')[0]+1
-            NoResponse=np.where(OriginalStateNamesByNumber[i]=='NoResponse')[0]+1
-            EarlyLickDelay=np.where(OriginalStateNamesByNumber[i]=='EarlyLickDelay')[0]+1
-            EarlyLickSample=np.where(OriginalStateNamesByNumber[i]=='EarlyLickSample')[0]+1
-            PreSamplePeriod=np.where(OriginalStateNamesByNumber[i]=='PreSamplePeriod')[0]+1
-            SamplePeriod=np.where(OriginalStateNamesByNumber[i]=='SamplePeriod')[0]+1
-            DelayPeriod=np.where(OriginalStateNamesByNumber[i]=='DelayPeriod')[0]+1
-            ResponseCue=np.where(OriginalStateNamesByNumber[i]=='ResponseCue')[0]+1
-            startindex = np.where(OriginalStateData[i]==PreSamplePeriod)[0]
-            sampleindex = np.where(OriginalStateData[i]==SamplePeriod)[0]
-            delayindex = np.where(OriginalStateData[i]==DelayPeriod)[0]
-            responseindex = np.where(OriginalStateData[i]==ResponseCue)[0]
-            endindex = np.where(OriginalStateData[i]==StopLicking)[0]
-            lickleft = np.where(OriginalEventData[i]==69)[0]
-            lickright = np.where(OriginalEventData[i]==70)[0]
-            if np.any(OriginalStateData[i]==Reward):
-                outcome = 'hit'
-            elif np.any(OriginalStateData[i]==TimeOut):
-                outcome = 'miss'
-            elif np.any(OriginalStateData[i]==NoResponse):
-                outcome = 'ignore'
-            if ProtocolType==5:
-                if np.any(OriginalStateData[i]==EarlyLickDelay):
-                    early_lick = 'early'
-            if ProtocolType>5:
-                if np.any(OriginalStateData[i]==EarlyLickDelay) or np.any(OriginalStateData[i]==EarlyLickSample):
-                    early_lick = 'early'
 
-            Session.Trial().insert1((int(key[0]), int(key[1]), i, OriginalStateTimestamps[i][startindex][0], OriginalStateTimestamps[i][endindex[0]]))
+            if ProtocolType==4:
+                itemindex = np.where(OriginalStateData[i]==15)
+                if np.any(OriginalStateData[i]==11):
+                    outcome = 'hit'
+                elif np.any(OriginalStateData[i]==14):
+                    outcome = 'miss'
+                elif np.any(OriginalStateData[i]==13):
+                    outcome = 'ignore'
+
+            if ProtocolType==5:
+                itemindex = np.where(OriginalStateData[i]==16)
+                if np.any(OriginalStateData[i]==5):
+                    early_lick = 'early'
+                if np.any(OriginalStateData[i]==12):
+                    outcome = 'hit'
+                elif np.any(OriginalStateData[i]==15):
+                    outcome = 'miss'
+                elif np.any(OriginalStateData[i]==14):
+                    outcome = 'ignore'
+
+            if ProtocolType>5:
+                itemindex = np.where(OriginalStateData[i]==17)
+                if np.any(OriginalStateData[i]==4) or np.any(OriginalStateData[i]==6):
+                    early_lick = 'early'
+                if np.any(OriginalStateData[i]==13):
+                    outcome = 'hit'
+                elif np.any(OriginalStateData[i]==16):
+                    outcome = 'miss'
+                elif np.any(OriginalStateData[i]==15):
+                    outcome = 'ignore'
+            else:
+                itemindex = np.where(OriginalStateData[i]==1)
+
+            Session.Trial().insert1((int(key[0]), int(key[1]), i, OriginalEventTimestamps[i][1], OriginalStateTimestamps[i][itemindex][0]))
             
-            if Reversal==1:
-                if TrialTypes[i]==1:
-                    trial_instruction = 'left'
-                elif TrialTypes[i]==0:
-                    trial_instruction = 'right'
-            elif Reversal==2:
-                if TrialTypes[i]==1:
-                    trial_instruction = 'right'
-                elif TrialTypes[i]==0:
-                    trial_instruction = 'left'
+            if TrialTypes[i]==0:
+                trial_instruction = 'left'
+            elif TrialTypes[i]==1:
+                trial_instruction = 'right'
+            
 
             BehaviorTrial().insert1((int(key[0]), int(key[1]), i, 'audio delay', trial_instruction, early_lick, outcome))
             TrialNote().insert1((int(key[0]), int(key[1]), i, 'protocol #', str(ProtocolType)))
-            TrialEvent().insert([(int(key[0]), int(key[1]), i, 'presample', OriginalStateTimestamps[i][startindex][0], OriginalStateTimestamps[i][sampleindex[0]]-OriginalStateTimestamps[i][startindex][0]),
-            (int(key[0]), int(key[1]), i, 'go', OriginalStateTimestamps[i][responseindex][0], AnswerPeriod)])
-            for j in range(0, len(sampleindex)):
-                TrialEvent().insert1((int(key[0]), int(key[1]), i, 'sample', OriginalStateTimestamps[i][sampleindex[j]], SampleDur))
-            for j in range(0, len(delayindex)):
-                TrialEvent().insert1((int(key[0]), int(key[1]), i, 'delay', OriginalStateTimestamps[i][delayindex[j]], DelayDur))
-            for j in range(0, len(lickleft)):
-                ActionEvent().insert1((int(key[0]), int(key[1]), i, 'left lick', OriginalEventTimestamps[i][lickleft[j]]))
-            for j in range(0, len(lickright)):
-                ActionEvent().insert1((int(key[0]), int(key[1]), i, 'right lick', OriginalEventTimestamps[i][lickright[j]]))
 
 @schema 
 class TrialNoteType(dj.Lookup):
@@ -193,9 +177,9 @@ class TrialEvent(dj.Manual):
     definition = """
     -> BehaviorTrial 
     -> TrialEventType
-    trial_event_time : decimal(8, 4)   # (s) from trial start, not session start (depends)
+    trial_event_time : decimal(8, 3)   # (s) from session and trial start (depends)
     ---
-    duration : decimal(8,4)  #  (s)  
+    duration : decimal(8,3)  #  (s)  
     """
 
 @schema
@@ -214,7 +198,7 @@ class ActionEvent(dj.Manual):
     definition = """
     -> BehaviorTrial
     -> ActionEventType
-    action_event_time : decimal(8,4)  # (s) from trial or session (it depends but please figure it out)
+    action_event_time : decimal(8,3)  # (s) from trial or session (it depends but please figure it out)
     """
 
 @schema
@@ -222,7 +206,7 @@ class TrackingDevice(dj.Lookup):
     definition = """
     tracking_device  : varchar(8)  # e.g. camera, microphone
     ---
-    sampling_rate  :  decimal(8, 4)   # Hz
+    sampling_rate  :  decimal(9, 3)   # Hz
     """
 
 @schema
@@ -250,7 +234,7 @@ class Photostim(dj.Lookup):
     photo_stim :  smallint 
     ---
     -> ccf.CCF
-    duration  :  decimal(8,4)   # (s)
+    duration  :  decimal(5,3)   # (s)
     waveform  :  longblob       # (mW)
     """
 
