@@ -17,10 +17,10 @@ schema = dj.schema(dj.config['%s.database' % __name__], locals())
 
 
 @schema
-class LegacySession(dj.Lookup):
-
+class ExternalSessionFile(dj.Lookup):
+    # TODO: more representative class name
     definition = """
-    legacy_sesion_file:         varchar(255)    # legacy session file
+    external_sesion_file:         varchar(255)    # legacy session file
     """
 
     contents = [[os.path.join(dj.config['legacy_data_dir'], f)]
@@ -29,16 +29,16 @@ class LegacySession(dj.Lookup):
 
 
 @schema
-class LegacySessionIngest(dj.Computed):
+class ExternalSessionFileIngest(dj.Computed):
     definition = """
-    -> LegacySessionFile
+    -> ExternalSessionFile
     ---
     -> experiment.Session
     """
 
     @property
     def key_source(self):
-        return LegacySession()
+        return ExternalSessionFile()
 
     def make(self, key):
 
@@ -79,4 +79,4 @@ class LegacySessionIngest(dj.Computed):
 if __name__ == '__main__':
     do_ingest = False
     if do_ingest:
-        LegacySessionIngest().populate()
+        ExternalSessionFileIngest().populate()
