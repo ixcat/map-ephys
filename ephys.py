@@ -1,7 +1,7 @@
 import datajoint as dj
 import ccf, experiment
 
-schema = dj.schema('daveliu_map_ephys', locals())
+schema = dj.schema(dj.config['%s.database' % __name__], locals())
 
 
 @schema

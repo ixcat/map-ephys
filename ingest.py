@@ -13,7 +13,7 @@ import experiment
 if 'legacy_data_dir' not in dj.config:
     dj.config['legacy_data_dir'] = 'x:\map\map-ephys\data'
 
-schema = dj.schema(dj.config['ingest_database'], locals())
+schema = dj.schema(dj.config['%s.database' % __name__], locals())
 
 
 @schema

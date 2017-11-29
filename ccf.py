@@ -1,7 +1,6 @@
 import datajoint as dj
 
-
-schema = dj.schema('daveliu_ccf', locals())
+schema = dj.schema(dj.config['%s.database' % __name__], locals())
 
 
 @schema
