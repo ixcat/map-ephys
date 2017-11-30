@@ -53,7 +53,7 @@ class ImportedSessionFileIngest(dj.Imported):
         sfname = key['imported_session_file']
         sfpath = os.path.join(dj.config['imported_session_path'], sfname)
 
-        print('LegacySessionIngest.make(): Loading {f}'.format(f=sfname))
+        print('ImportedSessionFileIngest.make(): Loading {f}'.format(f=sfname))
 
         mat = spio.loadmat(sfpath, squeeze_me=True)
         SessionData = mat['SessionData']
@@ -92,4 +92,5 @@ if __name__ == '__main__':
               .format(p=os.path.basename(sys.argv[0])))
         sys.exit(0)
 
+    ImportedSessionFile().populate()
     ImportedSessionFileIngest().populate()
