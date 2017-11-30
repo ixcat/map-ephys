@@ -10,40 +10,40 @@ import datajoint as dj
 import experiment
 
 
-if 'legacy_data_dir' not in dj.config:
-    dj.config['legacy_data_dir'] = 'x:\map\map-ephys\data'
+if 'imported_session_path' not in dj.config:
+    dj.config['imported_session_path'] = 'x:\map\map-ephys\data'
 
-schema = dj.schema(dj.config['%s.database' % __name__], locals())
+schema = dj.schema(dj.config['ingest.database'], locals())
 
 
 @schema
-class ExternalSessionFile(dj.Lookup):
+class ImportedSessionFile(dj.Lookup):
     # TODO: more representative class name
     definition = """
-    external_sesion_file:         varchar(255)    # legacy session file
+    imported_sesion_file:         varchar(255)    # imported session file
     """
 
-    contents = [[os.path.join(dj.config['legacy_data_dir'], f)]
-                for f in os.listdir(dj.config['legacy_data_dir'])
+    contents = [[os.path.join(dj.config['imported_session_path'], f)]
+                for f in os.listdir(dj.config['imported_session_path'])
                 if f.endswith('.mat')]
 
 
 @schema
-class ExternalSessionFileIngest(dj.Computed):
+class ImportedSessionFileIngest(dj.Imported):
     definition = """
-    -> ExternalSessionFile
+    -> ImportedSessionFile
     ---
     -> experiment.Session
     """
 
     @property
     def key_source(self):
-        return ExternalSessionFile()
+        return ImportedSessionFile()
 
     def make(self, key):
 
-        sfname = key['legacy_sesion_file']
-        print('LegacySessionIngest.make(): Loading {f}'.format(sfname))
+        sfname = key['imported_sesion_file']
+        print('LegacySessionIngest.make(): Loading {f}'.format(f=sfname))
 
         mat = spio.loadmat(sfname, squeeze_me=True)
         SessionData = mat['SessionData']
@@ -73,10 +73,13 @@ class ExternalSessionFileIngest(dj.Computed):
         # do rest of data loading here
         # ...
         # and save a record here to prevent future loading
-        self.insert1(dict(**key, **skey))
+        # self.insert1(dict(**key, **skey))
 
 
 if __name__ == '__main__':
-    do_ingest = False
-    if do_ingest:
-        ExternalSessionFileIngest().populate()
+    if len(sys.argv) < 2 or sys.argv[1] != 'populate':
+        print("usage: {p} [populate]"
+              .format(p=os.path.basename(sys.argv[0])))
+        sys.exit(0)
+
+    ImportedSessionFileIngest().populate()
