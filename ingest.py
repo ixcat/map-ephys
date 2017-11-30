@@ -20,7 +20,7 @@ schema = dj.schema(dj.config['ingest.database'], locals())
 class ImportedSessionFile(dj.Lookup):
     # TODO: more representative class name
     definition = """
-    imported_sesion_file:         varchar(255)    # imported session file
+    imported_session_file:         varchar(255)    # imported session file
     """
 
     contents = [[os.path.join(dj.config['imported_session_path'], f)]
@@ -42,7 +42,7 @@ class ImportedSessionFileIngest(dj.Imported):
 
     def make(self, key):
 
-        sfname = key['imported_sesion_file']
+        sfname = key['imported_session_file']
         print('LegacySessionIngest.make(): Loading {f}'.format(f=sfname))
 
         mat = spio.loadmat(sfname, squeeze_me=True)
