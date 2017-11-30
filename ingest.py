@@ -11,9 +11,14 @@ import experiment
 
 
 if 'imported_session_path' not in dj.config:
-    dj.config['imported_session_path'] = 'x:\map\map-ephys\data'
+    dj.config['imported_session_path'] = './data'
 
 schema = dj.schema(dj.config['ingest.database'], locals())
+
+
+def _listfiles():
+    return (f for f in os.listdir(dj.config['imported_session_path'])
+            if f.endswith('.mat'))
 
 
 @schema
@@ -23,9 +28,12 @@ class ImportedSessionFile(dj.Lookup):
     imported_session_file:         varchar(255)    # imported session file
     """
 
-    contents = [[os.path.join(dj.config['imported_session_path'], f)]
-                for f in os.listdir(dj.config['imported_session_path'])
-                if f.endswith('.mat')]
+    contents = ((f,) for f in (_listfiles()))
+
+    def populate(self):
+        for f in _listfiles():
+            if not self & {'imported_session_file': f}:
+                self.insert1((f,))
 
 
 @schema
@@ -43,9 +51,11 @@ class ImportedSessionFileIngest(dj.Imported):
     def make(self, key):
 
         sfname = key['imported_session_file']
+        sfpath = os.path.join(dj.config['imported_session_path'], sfname)
+
         print('LegacySessionIngest.make(): Loading {f}'.format(f=sfname))
 
-        mat = spio.loadmat(sfname, squeeze_me=True)
+        mat = spio.loadmat(sfpath, squeeze_me=True)
         SessionData = mat['SessionData']
 
         # construct session key & add session
