@@ -18,7 +18,7 @@ class AnimalWaterRestriction(dj.Manual):
     # potentially not applicable to all experiments
     definition = """
     -> Animal
-    -> wr_num : varchar(6) # water restriction number
+    water_restriction : varchar(6) # water restriction number
     """
 
 
