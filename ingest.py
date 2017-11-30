@@ -2,17 +2,20 @@
 
 import os
 import sys
+import logging
 
 import scipy.io as spio
 
 import datajoint as dj
 
+import lab
 import experiment
 
 
 if 'imported_session_path' not in dj.config:
     dj.config['imported_session_path'] = './data'
 
+log = logging.getLogger(__name__)
 schema = dj.schema(dj.config['ingest.database'], locals())
 
 
@@ -44,46 +47,46 @@ class ImportedSessionFileIngest(dj.Imported):
     -> experiment.Session
     """
 
-    @property
-    def key_source(self):
-        return ImportedSessionFile()
-
     def make(self, key):
 
-        sfname = key['imported_session_file']
-        sfpath = os.path.join(dj.config['imported_session_path'], sfname)
+        fname = key['imported_session_file']
+        fpath = os.path.join(dj.config['imported_session_path'], fname)
 
-        print('ImportedSessionFileIngest.make(): Loading {f}'.format(f=sfname))
+        log.info('ImportedSessionFileIngest.make(): Loading {f}'
+                 .format(f=fname))
 
-        mat = spio.loadmat(sfpath, squeeze_me=True)
-        SessionData = mat['SessionData']
+        # split files like 'dl7_TW_autoTrain_20171114_140357.mat'
+        h2o, t1, t2, date, time = fname.split('.')[0].split('_')
 
-        # construct session key & add session
-        #
-        # HACK:
-        #
-        # Session.session as designed was to be Nth session per animal;
-        # assuming here all sessions are for 1 animal and taking
-        # number-of-sessions-for-animal+1 as the key..
-        # best would be to find animal & trial deterministically
-        # from original ingest...
-        #
+        if False:  # TODO: pre-populate lab.Animal and AnimalWaterRestriction
 
-        skey = {'animal': 399572}
-        if not experiment.Session() & skey:
-            skey['session'] = 1
-        else:
-            skey['session'] = len(experiment.Session() & skey) + 1
+            # '%%' due to datajoint-python/issues/376
+            dups = (self & "imported_session_file like '%%{h2o}%%{date}%%"
+                    .format(h2o=h2o, date=date))
 
-        if experiment.Session() & skey:
-            # XXX: raise DataJointError?
-            print("Warning! session exists for {f}".format(sfname),
-                  file=sys.stderr)
+            if len(dups) > 1:
+                log.warning('split session case detected')
+                # TODO: handle split file
+                # TODO: self.insert( all split files )
+                return
 
-        # do rest of data loading here
-        # ...
-        # and save a record here to prevent future loading
-        # self.insert1(dict(**key, **skey))
+            # lookup animal
+            key['animal'] = (lab.Animal()
+                             & (lab.AnimalWaterRestriction
+                                & {'water_restriction': h2o})).fetch1('animal')
+
+            # synthesize session
+            key['session'] = (dj.U().aggr(experiment.Session(),
+                                          n='max(session)').fetch1('n') or 0)+1
+
+            if experiment.Session() & key:
+                # XXX: raise DataJointError?
+                log.warning("Warning! session exists for {f}".format(fname))
+
+            mat = spio.loadmat(fpath, squeeze_me=True)  # NOQA
+            # ... do rest of data loading here
+            # ... and save a record here to prevent future loading
+            self.insert1(key, ignore_extra_fields=True)
 
 
 if __name__ == '__main__':
@@ -92,5 +95,7 @@ if __name__ == '__main__':
               .format(p=os.path.basename(sys.argv[0])))
         sys.exit(0)
 
+    logging.basicConfig(level=logging.ERROR)  # quiet other modules
+    log.setLevel(logging.INFO)  # but show ours
     ImportedSessionFile().populate()
     ImportedSessionFileIngest().populate()
