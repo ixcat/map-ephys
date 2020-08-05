@@ -39,6 +39,7 @@ def get_gsm(le_id, re_id):
     def new_gsm():
         log.debug('new_gsm')
         gsm = GSM()
+        gsm.wait_timeout = 3600
         gsm.activate_endpoint(le_id)
         gsm.activate_endpoint(re_id)
         return gsm
