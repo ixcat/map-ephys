@@ -1,8 +1,8 @@
 version: '2.4'
 
 # todo: globus-init service:
-# - map volume into ~/.globusonline 
 # - globusconnectpersonal -setup
+# - globusconnectpersonal -start &
 
 services:
   globus-audit:
@@ -10,13 +10,10 @@ services:
     image: map-ephys-globus-audit:latest
     entrypoint: /bin/sh
     volumes:
-      - ./notebook:/notebooks
-      - .:/src/map-ephys
-      - ./data:/data
+      - .:/src/globus-audit
+      - ./dot-globusonline:/home/map/.globusonline
     ports:
       - "8888:8888"
     extra_hosts:
        - "db:192.168.1.10"
     volumes:
-      - .:/src/globus-audit
-      - ./dot-globusonline:/home/map/.globusonline
