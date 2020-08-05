@@ -1,0 +1,7 @@
+#! /bin/sh
+
+./auditfiles.py \
+	766102b6-cacc-11ea-9a44-0255d23c44ef:~/Globus/audit \
+	5b875fda-4185-11e8-bb52-0ac6873fc732:/ \
+	mesoscaleactivityproject_badfiles.txt
+
