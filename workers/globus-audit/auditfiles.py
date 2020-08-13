@@ -55,6 +55,17 @@ def lister(fname):
             yield line.rstrip().lstrip('projects/mesoscaleactivityproject/')
 
 
+def mksha(fname):
+    sha = sha1()
+    with open(fname, 'rb') as fh:
+        blksz = 65536
+        dat = fh.read(blksz)
+        while len(dat) > 0:
+            sha.update(dat)
+            dat = fh.read(blksz)
+    return sha
+
+
 def checker(le_id, le_dir, re_id, re_dir, fname):
 
     gsm = get_gsm(le_id, re_id)
@@ -89,7 +100,7 @@ def checker(le_id, le_dir, re_id, re_dir, fname):
     le_out_magic = magic.from_file(le_out)
 
     log.debug('getting sha1 information for {}'.format(le_out))
-    le_out_sha = sha1(le_out.encode()).hexdigest()
+    le_out_sha = mksha(le_out).hexdigest()
 
     rec = "{} {} {} # {}".format(le_out_stat.st_size, le_out_sha,
                                  fname, le_out_magic)
