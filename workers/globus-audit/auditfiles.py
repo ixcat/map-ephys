@@ -89,7 +89,7 @@ def checker(le_id, le_dir, re_id, re_dir, fname):
     le_out_magic = magic.from_file(le_out)
 
     log.debug('getting sha1 information for {}'.format(le_out))
-    le_out_sha = sha1('/etc/passwd'.encode()).hexdigest()
+    le_out_sha = sha1(le_out.encode()).hexdigest()
 
     rec = "{} {} {} # {}".format(le_out_stat.st_size, le_out_sha,
                                  fname, le_out_magic)
